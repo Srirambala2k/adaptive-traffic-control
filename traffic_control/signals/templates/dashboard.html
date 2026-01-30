@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Traffic Dashboard</title>
+</head>
+<body>
+    <h1>Adaptive Traffic Light Control</h1>
+    <img src="data:image/png;base64,{{ chart }}" />
+    <h2>Adaptive Green Light Times</h2>
+    <ul>
+        {% for k,v in adaptive_times.items %}
+            <li>{{ k }} : {{ v }} seconds</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
