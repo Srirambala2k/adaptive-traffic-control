@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import io, base64
 from .forms import IncidentReportForm, TrafficFilterForm
 import json
+import joblib
+
+model = joblib.load("signals/ml_model.pkl")
 
 
 
@@ -41,6 +44,80 @@ def logout_view(request):
 
 
 # Dashboard
+
+# @login_required(login_url="login")
+# def dashboard(request):
+#     # Handle incident form submission
+#     if request.method == "POST":
+#         form = IncidentReportForm(request.POST)
+#         if form.is_valid():
+#             incident = form.save(commit=False)
+#             incident.reported_by = request.user
+#             incident.save()
+#             return redirect("dashboard")
+#     else:
+#         form = IncidentReportForm()
+
+#     # Apply filters
+#     filter_form = TrafficFilterForm(request.GET or None)
+#     qs = TrafficData.objects.all()
+#     if filter_form.is_valid():
+#         if filter_form.cleaned_data["start_date"]:
+#             qs = qs.filter(timestamp__gte=filter_form.cleaned_data["start_date"])
+#         if filter_form.cleaned_data["end_date"]:
+#             qs = qs.filter(timestamp__lte=filter_form.cleaned_data["end_date"])
+#         if filter_form.cleaned_data["intersection"]:
+#             qs = qs.filter(intersection__icontains=filter_form.cleaned_data["intersection"])
+
+#     # Traffic chart data
+#     data = qs.order_by('-timestamp')[:10]
+#     intersections = [d.intersection for d in data]
+#     counts = [d.vehicle_count for d in data]
+
+#     chart_data = {
+#         "labels": json.dumps(intersections),
+#         "counts": json.dumps(counts),
+#     }
+
+#     # Signal timings chart data
+#     timings = SignalTiming.objects.all()
+#     intersections_t = [t.intersection for t in timings]
+#     green_times = [t.green_time for t in timings]
+#     red_times = [t.red_time for t in timings]
+
+#     timing_data = {
+#         "labels": json.dumps(intersections_t),
+#         "green_times": json.dumps(green_times),
+#         "red_times": json.dumps(red_times),
+#     }
+
+#     # Incident reports
+#     incidents = IncidentReport.objects.order_by('-timestamp')[:5]
+
+#     return render(request, "dashboard.html", {
+#         "chart_data": chart_data,
+#         "timing_data": timing_data,
+#         "incidents": incidents,
+#         "form": form,
+#         "filter_form": filter_form,
+#     })
+
+#     # ML Prediction Example
+#     latest_data = qs.order_by("-timestamp").first()
+#     if latest_data:
+#         prediction = model.predict([[latest_data.vehicle_count]])[0]
+#     else:
+#         prediction = "No prediction available"
+
+#     return render(request, "dashboard.html", {
+#         "chart_data": chart_data,
+#         "timing_data": timing_data,
+#         "incidents": incidents,
+#         "form": form,
+#         "filter_form": filter_form,
+#         "prediction": prediction,   # NEW: pass prediction to template
+#     })
+
 
 @login_required(login_url="login")
 def dashboard(request):
@@ -91,10 +168,19 @@ def dashboard(request):
     # Incident reports
     incidents = IncidentReport.objects.order_by('-timestamp')[:5]
 
+    # ML Prediction Example
+    latest_data = qs.order_by("-timestamp").first()
+    if latest_data:
+        prediction = model.predict([[latest_data.vehicle_count]])[0]
+    else:
+        prediction = "No prediction available"
+
+    # ✅ Single return statement
     return render(request, "dashboard.html", {
         "chart_data": chart_data,
         "timing_data": timing_data,
         "incidents": incidents,
         "form": form,
         "filter_form": filter_form,
+        "prediction": prediction,   # Pass prediction to template
     })

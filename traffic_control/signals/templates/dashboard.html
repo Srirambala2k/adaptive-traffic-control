@@ -2,12 +2,13 @@
 <html>
 <head>
     <title>Traffic Dashboard</title>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
     <h1>Adaptive Traffic Control Dashboard</h1>
     <a href="{% url 'logout' %}">Logout</a>
-    {{ chart_data|json_script:"chart-data" }}
+
     <!-- Filter Form -->
     <h2>Filter Traffic Data</h2>
     <form method="get">
@@ -15,52 +16,79 @@
         <button type="submit">Apply Filter</button>
     </form>
 
-   <h2>Traffic Density</h2>
+    <!-- ML Prediction -->
+<h2>ML Prediction</h2>
+<p>Predicted intersection: {{ prediction }}</p>
+{{ prediction|json_script:"prediction-data" }}
+
+<!-- Traffic Density Chart -->
+<h2>Traffic Density</h2>
+{{ chart_data|json_script:"chart-data" }}
 <canvas id="trafficChart"></canvas>
 <script>
     const chartData = JSON.parse(document.getElementById('chart-data').textContent);
+    const predictionData = JSON.parse(document.getElementById('prediction-data').textContent);
+
     const ctx = document.getElementById('trafficChart').getContext('2d');
     const trafficChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: chartData.labels,
-            datasets: [{
-                label: 'Vehicle Count',
-                data: chartData.counts,
-                backgroundColor: 'rgba(54, 162, 235, 0.6)'
-            }]
-        },
-        options: { responsive: true }
-    });
-</script>
-
-    <h2>Signal Timings</h2>
-{{ timing_data|json_script:"timing-data" }}
-<canvas id="timingChart"></canvas>
-<script>
-    const timingData = JSON.parse(document.getElementById('timing-data').textContent);
-    const ctx2 = document.getElementById('timingChart').getContext('2d');
-    const timingChart = new Chart(ctx2, {
-        type: 'bar',
-        data: {
-            labels: timingData.labels,
             datasets: [
                 {
-                    label: 'Green Time',
-                    data: timingData.green_times,
-                    backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    label: 'Vehicle Count',
+                    data: chartData.counts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)'
                 },
                 {
-                    label: 'Red Time',
-                    data: timingData.red_times,
-                    backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                    label: 'Predicted',
+                    data: [predictionData],
+                    backgroundColor: 'rgba(255, 206, 86, 0.6)'
                 }
             ]
         },
         options: { responsive: true }
     });
-</script>
 
+    // WebSocket for live updates
+    const socket = new WebSocket((window.location.protocol === 'https:' ? 'wss://' : 'ws://') + window.location.host + "/ws/traffic/");
+    socket.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        trafficChart.data.labels = data.labels;
+        trafficChart.data.datasets[0].data = data.counts;
+        trafficChart.update();
+    };
+    socket.onopen = function() {
+        socket.send(JSON.stringify({ "action": "fetch" }));
+    };
+</script>
+    <!-- Signal Timings Chart -->
+    <h2>Signal Timings</h2>
+    {{ timing_data|json_script:"timing-data" }}
+    <canvas id="timingChart"></canvas>
+    <script>
+        const timingData = JSON.parse(document.getElementById('timing-data').textContent);
+        const ctx2 = document.getElementById('timingChart').getContext('2d');
+        const timingChart = new Chart(ctx2, {
+            type: 'bar',
+            data: {
+                labels: timingData.labels,
+                datasets: [
+                    {
+                        label: 'Green Time',
+                        data: timingData.green_times,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)'
+                    },
+                    {
+                        label: 'Red Time',
+                        data: timingData.red_times,
+                        backgroundColor: 'rgba(255, 99, 132, 0.6)'
+                    }
+                ]
+            },
+            options: { responsive: true }
+        });
+    </script>
 
     <!-- Incident Reports -->
     <h2>Recent Incident Reports</h2>

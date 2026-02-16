@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     'signals',
+    "channels",
 
 ]
 
@@ -69,6 +70,9 @@ TEMPLATES = [
     },
 ]
 WSGI_APPLICATION = "traffic_control.wsgi.application"
+
+ASGI_APPLICATION = "traffic_control.asgi.application"
+
 
 
 # Database
